@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.0'
+}
+
+group 'io.sirix'
+version '0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
+dependencies {
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.8.2'
+    implementation 'io.vertx:vertx-core:4.2.1'
+    implementation 'io.vertx:vertx-lang-kotlin-coroutines:4.2.1'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.0'
+}
