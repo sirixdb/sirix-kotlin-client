@@ -42,14 +42,18 @@ class VertxClientWrapper(
     }
 
     private fun makeRequest(
-        method: HttpMethod, path: String, params: Map<String, String>, headers: Map<String, String>, token: String?
+        method: HttpMethod,
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>,
+        token: String?
     ): RequestOptions? {
         val uri = if (params.isNotEmpty()) {
             val strings = mutableListOf<String>()
             for (entry in params.entries) {
                 strings.add("${entry.key}=${entry.value}")
             }
-            path + strings.joinToString("&")
+            path + "?" + strings.joinToString("&")
         } else {
             path
         }
@@ -106,30 +110,42 @@ class VertxClientWrapper(
         }
     }
 
-    fun stopRefreshLoop() {
+    override fun stopRefreshLoop() {
         job?.cancel()
     }
 
-    override suspend fun head(path: String, params: Map<String, String>, headers: Map<String, String>): Response {
+    override suspend fun head(
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>
+    ): Response {
         return makeResponse(
             httpClient.request(makeRequest(HttpMethod.HEAD, path, params, headers, token)).await().send().await()
         )
     }
 
-    override suspend fun get(path: String, params: Map<String, String>, headers: Map<String, String>): Response {
+    override suspend fun get(
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>
+    ): Response {
         return makeResponse(
             httpClient.request(makeRequest(HttpMethod.GET, path, params, headers, token)).await().send().await()
         )
     }
 
-    override suspend fun delete(path: String, params: Map<String, String>, headers: Map<String, String>): Response {
+    override suspend fun delete(
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>
+    ): Response {
         return makeResponse(
             httpClient.request(makeRequest(HttpMethod.DELETE, path, params, headers, token)).await().send().await()
         )
     }
 
     override suspend fun post(
-        path: String, params: Map<String, String>, headers: Map<String, String>, body: String
+        path: String, params: Map<String, java.io.Serializable?>, headers: Map<String, String>, body: String
     ): Response {
         return makeResponse(
             httpClient.request(makeRequest(HttpMethod.POST, path, params, headers, token)).await().send(body).await()
@@ -137,7 +153,7 @@ class VertxClientWrapper(
     }
 
     override suspend fun put(
-        path: String, params: Map<String, String>, headers: Map<String, String>, body: String
+        path: String, params: Map<String, java.io.Serializable?>, headers: Map<String, String>, body: String
     ): Response {
         return makeResponse(
             httpClient.request(makeRequest(HttpMethod.PUT, path, params, headers, token)).await().send(body).await()

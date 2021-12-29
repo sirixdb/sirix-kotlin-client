@@ -13,19 +13,35 @@ abstract class AbstractAuthToken {
 abstract class AbstractClientWrapper {
     abstract val token: String?
     abstract suspend fun authenticate()
-    abstract suspend fun head(path: String, params: Map<String, String>, headers: Map<String, String>): Response
-    abstract suspend fun get(path: String, params: Map<String, String>, headers: Map<String, String>): Response
-    abstract suspend fun delete(path: String, params: Map<String, String>, headers: Map<String, String>): Response
+    abstract fun stopRefreshLoop()
+    abstract suspend fun head(
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>
+    ): Response
+
+    abstract suspend fun get(
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>
+    ): Response
+
+    abstract suspend fun delete(
+        path: String,
+        params: Map<String, java.io.Serializable?>,
+        headers: Map<String, String>
+    ): Response
+
     abstract suspend fun post(
         path: String,
-        params: Map<String, String>,
+        params: Map<String, java.io.Serializable?>,
         headers: Map<String, String>,
         body: String
     ): Response
 
     abstract suspend fun put(
         path: String,
-        params: Map<String, String>,
+        params: Map<String, java.io.Serializable?>,
         headers: Map<String, String>,
         body: String
     ): Response
