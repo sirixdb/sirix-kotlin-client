@@ -1,17 +1,11 @@
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import wrappers.InternalSirixServerException
+import wrappers.MissingSirixResourceException
 import wrappers.Response
+import wrappers.UnauthorizedException
 
-open class SirixException : Exception()
-
-class UnauthorizedException(val serverMessage: String) : SirixException()
-
-class InternalSirixServerException(val serverMessage: String) : SirixException()
-
-class MissingSirixResourceException(val serverMessage: String) : SirixException()
-
-suspend fun wrapRequest(check404: Boolean = true, requestFunction: suspend () -> Response): Response {
-    val response = requestFunction()
+suspend fun checkResponse(response: Response, check404: Boolean = true): Response {
     if (response.statusCode >= 500) {
         throw InternalSirixServerException(response.body)
     }

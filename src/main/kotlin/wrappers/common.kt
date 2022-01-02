@@ -1,5 +1,17 @@
 package wrappers
 
+open class SirixException : Exception()
+
+class UnauthorizedException(val serverMessage: String) : SirixException()
+
+class InternalSirixServerException(val serverMessage: String) : SirixException()
+
+class SirixClientUsageException(val errorMessage: String): SirixException()
+
+class MissingSirixResourceException(val serverMessage: String) : SirixException()
+
+class ConnectionException : SirixException()
+
 class Response(
     val statusCode: Int,
     val headers: Set<Map.Entry<String, String>>,

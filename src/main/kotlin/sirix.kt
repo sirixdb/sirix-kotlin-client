@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import wrappers.AbstractClientWrapper
+import wrappers.InternalSirixServerException
 import wrappers.Response
 import wrappers.VertxClientWrapper
 
@@ -25,29 +26,33 @@ class Sirix(
     }
 
     suspend fun getInfo(): ServerInfo {
-        return parseToJson(wrapRequest {
-            httpClient.get("/", mapOf("withResources" to false), mapOf())
-        })
+        return parseToJson(
+            checkResponse(
+                httpClient.get("/", mapOf("withResources" to false), mapOf())
+            )
+        )
     }
 
     suspend fun getInfoWithResources(): ServerInfo {
-        return parseToJson(wrapRequest {
-            httpClient.get("/", mapOf("withResources" to true), mapOf())
-        })
+        return parseToJson(
+            checkResponse(
+                httpClient.get("/", mapOf("withResources" to true), mapOf())
+            )
+        )
     }
 
     suspend fun query(query: String, startResultSeqIndex: Int? = null, endResultSeqIndex: Int? = null): Response {
-        return wrapRequest {
+        return checkResponse(
             httpClient.post(
                 "/", mapOf(), mapOf(), Json.encodeToString(QueryObject(query, startResultSeqIndex, endResultSeqIndex))
             )
-        }
+        )
     }
 
     suspend fun deleteAll(): Response {
-        return wrapRequest {
+        return checkResponse(
             httpClient.delete("/", mapOf(), mapOf())
-        }
+        )
     }
 }
 
