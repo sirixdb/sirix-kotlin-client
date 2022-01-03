@@ -41,7 +41,7 @@ enum class Insert {
 }
 
 open class Revision private constructor() {
-    class RevisionNumber(val number: ULong?) : Revision()
+    class RevisionNumber(val number: Int?) : Revision()
     class RevisionTimestamp(val timestamp: LocalDate) : Revision()
 }
 

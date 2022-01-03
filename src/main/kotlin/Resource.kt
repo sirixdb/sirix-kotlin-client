@@ -37,7 +37,7 @@ class Resource(
     }
 
     suspend fun read(
-        nodeId: ULong? = null,
+        nodeId: Long? = null,
         maxLevel: UInt? = null,
         topLevelLimit: UInt? = null,
         topLevelSkipLastNode: UInt? = null,
@@ -52,7 +52,7 @@ class Resource(
     }
 
     suspend inline fun <reified T> readAndParse(
-        nodeId: ULong? = null,
+        nodeId: Long? = null,
         maxLevel: UInt? = null,
         topLevelLimit: UInt? = null,
         topLevelSkipLastNode: UInt? = null,
@@ -68,7 +68,7 @@ class Resource(
     }
 
     suspend fun readWithMetadata(
-        nodeId: ULong? = null,
+        nodeId: Long? = null,
         maxLevel: UInt? = null,
         topLevelLimit: UInt? = null,
         topLevelSkipLastNode: UInt? = null,
@@ -84,7 +84,7 @@ class Resource(
         return checkResponse(httpClient.get(path, params, mapOf("accept" to httpType)))
     }
 
-    suspend fun diff(firstRevision: Revision, secondRevision: Revision, nodeId: ULong?, maxDepth: UInt?): DiffResponse {
+    suspend fun diff(firstRevision: Revision, secondRevision: Revision, nodeId: Long?, maxDepth: UInt?): DiffResponse {
         val params = mutableMapOf<String, Serializable>()
         params["first-revision"] = firstRevision.toString()
         params["second-revision"] = secondRevision.toString()
@@ -97,7 +97,7 @@ class Resource(
         return parseToJson(checkResponse(httpClient.get("$databaseName/$resourceName/diff", params, mapOf())))
     }
 
-    suspend fun etag(nodeId: ULong): String {
+    suspend fun etag(nodeId: Long): String {
         return checkResponse(
             httpClient.head(
                 path, mapOf("nodeId" to nodeId.toString()), mapOf("accept" to httpType)
@@ -105,7 +105,7 @@ class Resource(
         ).headers.first { it.key == "etag" }.value
     }
 
-    suspend fun query(query: String, startResultSeqIndex: ULong?, endResultSeqIndex: ULong?): Response {
+    suspend fun query(query: String, startResultSeqIndex: UInt?, endResultSeqIndex: UInt?): Response {
         val params = mutableMapOf(
             "query" to query,
         )
@@ -118,7 +118,7 @@ class Resource(
         return checkResponse(httpClient.get(path, params, mapOf("accept" to httpType)))
     }
 
-    suspend fun update(nodeId: ULong, data: String, insert: Insert = Insert.CHILD, etag: String?): Response {
+    suspend fun update(nodeId: Long, data: String, insert: Insert = Insert.CHILD, etag: String?): Response {
         val etagToUse = etag ?: etag(nodeId)
         return checkResponse(
             httpClient.post(
@@ -130,7 +130,7 @@ class Resource(
         )
     }
 
-    suspend fun delete(nodeId: ULong?, etag: String?): Response {
+    suspend fun delete(nodeId: Long?, etag: String?): Response {
         var etagAssignable = etag
         if ((nodeId == null) && (etag != null)) {
             throw SirixClientUsageException("Provided an ETag but no nodeId. ETag: $etag")
@@ -151,7 +151,7 @@ class Resource(
 }
 
 private fun buildReadParams(
-    nodeId: ULong?,
+    nodeId: Long?,
     maxLevel: UInt?,
     topLevelLimit: UInt?,
     topLevelSkipLastNode: UInt?,
