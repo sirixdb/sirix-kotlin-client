@@ -1,0 +1,31 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.7.20'
+    id 'application'
+}
+
+group = 'io.sirix.ktsirix'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '18'
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = '18'
+}
+
+application {
+    mainClassName = 'MainKt'
+}
