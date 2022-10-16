@@ -2,7 +2,7 @@ package io.sirix.ktsirix
 
 import java.time.Instant
 
-data class AccessToken(
+internal data class AccessToken(
     val value: String,
     val expirationTime: Instant = Instant.now(),
     val refreshToken: String
@@ -10,7 +10,7 @@ data class AccessToken(
     fun isNotExpired() = Instant.now() < expirationTime
 }
 
-data class AccessTokenResponse(
+internal data class AccessTokenResponse(
     val accessToken: String,
     val expiresIn: Long,
     val refreshToken: String

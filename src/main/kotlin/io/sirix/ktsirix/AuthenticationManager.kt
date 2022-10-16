@@ -10,7 +10,7 @@ internal class AuthenticationManager(
 
     private var accessToken: AccessToken? = null
 
-    private fun getAccessToken(): String {
+    fun getAccessToken(): String {
         accessToken?.let { token ->
             if (token.isNotExpired()) {
                 return token.value
