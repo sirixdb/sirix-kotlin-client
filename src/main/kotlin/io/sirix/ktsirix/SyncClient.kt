@@ -2,16 +2,19 @@ package io.sirix.ktsirix
 
 import com.fasterxml.jackson.core.type.TypeReference
 import io.sirix.ktsirix.util.DefaultObjectMapper
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 
 private const val TOKEN_ENDPOINT = "token"
 
 private const val JSON_MEDIA_TYPE = "application/json; charset=utf-8"
 
-internal class SyncClient(
+class SyncClient(
     private val host: String,
     private val httpClient: OkHttpClient = OkHttpClient()
 ) : ApiClient {
@@ -41,7 +44,7 @@ internal class SyncClient(
             .url("$host/$name")
             .method("PUT", null)
             .header("Content-Type", type.value)
-            .header("Authorization", "Bearer $accessToken")
+            .withAuthorization(accessToken)
             .build()
         executeRequest(request, "database creation")
     }
@@ -50,39 +53,99 @@ internal class SyncClient(
         val request = Request.Builder()
             .url("$host/$name")
             .header("Accept", JSON_MEDIA_TYPE)
-            .header("Authorization", "Bearer $accessToken")
+            .withAuthorization(accessToken)
             .build()
         return executeRequestWithResponse(request, tClass, "read database info")
     }
 
+    override fun deleteDatabase(name: String, accessToken: String) {
+        val request = Request.Builder()
+            .url("$host/$name")
+            .method("DELETE", null)
+            .withAuthorization(accessToken)
+            .build()
+        executeRequest(request, "database deletion")
+    }
+
+    override fun executeQuery(query: String, accessToken: String): String? = executeQuery(mapOf("query" to query), accessToken)
+
+    // TODO: change the query map to <string, any>
+    override fun executeQuery(query: Map<String, String>, accessToken: String): String? {
+        val request = Request.Builder()
+            .url("$host/")
+            .post(query.toRequestBody(JSON_MEDIA_TYPE))
+            .withAuthorization(accessToken)
+            .build()
+        return executeRequest(request, "query")
+    }
+
+    override fun resourceExists(dbName: String, dbType: DbType, storeName: String, accessToken: String): Boolean {
+        val request = Request.Builder()
+            .url("$host/$dbName/$storeName")
+            .head()
+            .withAuthorization(accessToken)
+            .header("Accept", dbType.value)
+            .build()
+        return httpClient.newCall(request).execute().use(Response::isSuccessful)
+    }
+
+    override fun <T> readResource(dbName: String, dbType: DbType, storeName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T {
+        val urlBuilder = "$host/$storeName".toHttpUrl()
+            .newBuilder()
+        params.forEach { (key, value) -> urlBuilder.addQueryParameter(key, value) }
+
+        val request = Request.Builder()
+            .url(urlBuilder.build())
+            .header("Accept", dbType.value)
+            .withAuthorization(accessToken)
+            .build()
+        return executeRequestWithResponse(request, tClass, "read resource")
+    }
+
+    override fun createResource(dbName: String, dbType: DbType, storeName: String, data: String, accessToken: String, hashType: String): String? {
+        val request = Request.Builder()
+            .url("$host/$dbName/$storeName?hashType=$hashType")
+            .put(data.toRequestBody(dbType.value.toMediaType()))
+            .withAuthorization(accessToken)
+            .build()
+        return executeRequest(request, "create resource")
+    }
+
+    // TODO: add xml deserializer
+    override fun <T> history(dbName: String, dbType: DbType, storeName: String, accessToken: String, tClass: TypeReference<T>): T {
+        val request = Request.Builder()
+            .url("$host/$dbName/$storeName/history")
+            .header("Accept", dbType.value)
+            .withAuthorization(accessToken)
+            .build()
+        return executeRequestWithResponse(request, tClass, "fetch history")
+    }
+
     private fun <T> executeAuthentication(requestBodyMap: Map<String, String>, tClass: TypeReference<T>): T {
-        val requestBody = DefaultObjectMapper.writeValueAsString(requestBodyMap)
-            .toRequestBody(JSON_MEDIA_TYPE.toMediaType())
         val request = Request.Builder()
             .url("$host/$TOKEN_ENDPOINT")
-            .post(requestBody)
+            .post(requestBodyMap.toRequestBody(JSON_MEDIA_TYPE))
             .build()
         //TODO: change authentication exception for unauthorized
         return executeRequestWithResponse(request, tClass, "authentication")
     }
 
     private fun <T> executeRequestWithResponse(request: Request, tClass: TypeReference<T>, operationName: String): T {
-        return httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw SirixHttpClientException("The Sirix $operationName failed with status code: ${response.code} and body: ${response.body?.string()}")
-            }
-
-            response.body?.let {
-                DefaultObjectMapper.readValue(it.string(), tClass)
-            } ?: throw SirixHttpClientException("The Sirix $operationName failed because the response body was not valid")
-        }
+        return executeRequest(request, operationName)?.let {
+            DefaultObjectMapper.readValue(it, tClass)
+        } ?: throw SirixHttpClientException("The Sirix $operationName failed because the response body was not valid")
     }
 
-    private fun executeRequest(request: Request, operationName: String) {
+    private fun executeRequest(request: Request, operationName: String): String? {
         httpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
                 throw SirixHttpClientException("The Sirix $operationName failed with status code: ${response.code} and body: ${response.body?.string()}")
             }
+            return response.body?.use(ResponseBody::string)
         }
     }
+
+    private fun Map<String, Any>.toRequestBody(mediaType: String) = DefaultObjectMapper.writeValueAsString(this).toRequestBody(mediaType.toMediaType())
+
+    private fun Request.Builder.withAuthorization(accessToken: String): Request.Builder = this.header("Authorization", "Bearer $accessToken")
 }

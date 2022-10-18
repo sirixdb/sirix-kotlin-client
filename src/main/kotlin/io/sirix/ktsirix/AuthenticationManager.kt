@@ -2,7 +2,7 @@ package io.sirix.ktsirix
 
 import com.fasterxml.jackson.core.type.TypeReference
 
-internal class AuthenticationManager(
+class AuthenticationManager(
     private val username: String,
     private val password: String,
     private val client: ApiClient
