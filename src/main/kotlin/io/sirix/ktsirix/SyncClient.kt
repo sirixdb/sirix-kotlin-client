@@ -69,7 +69,6 @@ class SyncClient(
 
     override fun executeQuery(query: String, accessToken: String): String? = executeQuery(mapOf("query" to query), accessToken)
 
-    // TODO: change the query map to <string, any>
     override fun executeQuery(query: Map<String, String>, accessToken: String): String? {
         val request = Request.Builder()
             .url("$host/")
@@ -145,7 +144,7 @@ class SyncClient(
         }
     }
 
-    private fun Map<String, Any>.toRequestBody(mediaType: String) = DefaultObjectMapper.writeValueAsString(this).toRequestBody(mediaType.toMediaType())
+    private fun Map<String, String>.toRequestBody(mediaType: String) = DefaultObjectMapper.writeValueAsString(this).toRequestBody(mediaType.toMediaType())
 
     private fun Request.Builder.withAuthorization(accessToken: String): Request.Builder = this.header("Authorization", "Bearer $accessToken")
 }

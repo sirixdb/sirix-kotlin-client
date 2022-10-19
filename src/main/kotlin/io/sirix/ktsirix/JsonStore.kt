@@ -1,6 +1,7 @@
 package io.sirix.ktsirix
 
 import com.fasterxml.jackson.core.type.TypeReference
+import io.sirix.ktsirix.util.DefaultObjectMapper
 
 private val queryFunctionInclude = """
     declare function local:q(${'$'}i, ${'$'}q) {
@@ -72,6 +73,12 @@ class JsonStore(
         return readResource(query, revision, object : TypeReference<List<SubtreeRevision>>() {})
     }
 
+    fun findByKey(nodeKey: Int, revision: Revision?): Revision {
+        val params = mutableMapOf("nodeId" to nodeKey.toString())
+        revision?.toParamsMap()?.let(params::putAll)
+        return client.readResource(dbName, dbType, storeName, params, authManager.getAccessToken(), object : TypeReference<Revision>() {})
+    }
+
     private fun <T> readResource(query: String, revision: Revision? = null, tClass: TypeReference<T>): T {
         val params = mutableMapOf("query" to query)
         revision?.toParamsMap()?.let(params::putAll)
@@ -98,7 +105,39 @@ class JsonStore(
         return client.executeQuery(query, authManager.getAccessToken())
     }
 
+    fun deleteFieldsByKey(nodeKey: Int, fields: List<String>): String? {
+        val query = """
+            let ${'$'}obj := sdb:select-item(jn:doc('$dbName','$storeName'),$nodeKey)
+             let ${'$'}update := ${fields.toJsonParse()}
+             for ${'$'}i in ${'$'}fields return delete json ${'$'}obj.${'$'}i
+        """.trimIndent()
+        return client.executeQuery(query, authManager.getAccessToken())
+    }
+
+    fun deleteField(queryMatch: String, fields: List<String>): String? {
+        val query = """
+            $queryFunctionInclude
+            let ${'$'}records := for ${'$'}i in jn:doc('$dbName','$storeName')$root
+             where local:q(${'$'}i, ${queryMatch.toJsonParse()}) return ${'$'}i
+             let ${'$'}fields := ${fields.toJsonParse()}
+             for ${'$'}i in ${'$'}fields return delete json ${'$'}records.${'$'}i
+        """.trimIndent()
+        return client.executeQuery(query, authManager.getAccessToken())
+    }
+
+    fun deleteRecords(queryMatch: String): String? {
+        val query = """
+            $queryFunctionInclude
+            let ${'$'}doc := jn:doc('$dbName','$storeName')$root
+             let ${'$'}m := for ${'$'}i at ${'$'}pos in ${'$'}doc where local:q(${'$'}i, ${queryMatch.toJsonParse()}) return ${'$'}pos - 1
+             for ${'$'}i in ${'$'}m order by ${'$'}i descending return delete json ${'$'}doc[[${'$'}i]]
+        """.trimIndent()
+        return client.executeQuery(query, authManager.getAccessToken())
+    }
+
     private fun upsertOrUpdateQuery(upsert: Boolean): String = if (upsert) upsertFunctionInclude else updateFunctionInclude
 
     private fun String.toJsonParse(): String = "jn:parse('$this')"
+
+    private fun List<String>.toJsonParse(): String = "jn:parse('${DefaultObjectMapper.writeValueAsString(this)}')"
 }
