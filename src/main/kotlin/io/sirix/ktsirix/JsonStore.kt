@@ -29,7 +29,7 @@ class JsonStore(
 
     fun insertOne(record: String): String? {
         val query = "append json jn:parse('$record') into jn:doc('$dbName','$storeName')$root"
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     fun insertMany(records: List<String>): String? {
@@ -38,7 +38,7 @@ class JsonStore(
             let ${'$'}doc := jn:doc('$dbName','$storeName')$root
             for ${'$'}i in jn:parse('$recordsString') return append json ${'$'}i into ${'$'}doc
         """.trimIndent()
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     fun exists(): Boolean = client.resourceExists(dbName, dbType, storeName, authManager.getAccessToken())
@@ -94,7 +94,7 @@ class JsonStore(
             let ${'$'}rec := sdb:select-item(jn:doc('$dbName','$storeName'),$nodeKey) 
             return local:${if (upsert) "upsert" else "update"}-fields(${'$'}rec, ${update.toJsonParse()})
         """.trimIndent()
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     fun updateMany(queryMatch: String, update: String, upsert: Boolean = true): String? {
@@ -103,7 +103,7 @@ class JsonStore(
             for ${'$'}i in jn:doc('$dbName','$storeName')$root where local:q(${'$'}i, ${queryMatch.toJsonParse()})
             return local:${if (upsert) "upsert" else "update"}-fields(${'$'}i, ${update.toJsonParse()})
         """.trimIndent()
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     fun deleteFieldsByKey(nodeKey: Int, fields: List<String>): String? {
@@ -112,7 +112,7 @@ class JsonStore(
              let ${'$'}update := ${fields.toJsonParse()}
              for ${'$'}i in ${'$'}fields return delete json ${'$'}obj.${'$'}i
         """.trimIndent()
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     fun deleteField(queryMatch: String, fields: List<String>): String? {
@@ -123,7 +123,7 @@ class JsonStore(
              let ${'$'}fields := ${fields.toJsonParse()}
              for ${'$'}i in ${'$'}fields return delete json ${'$'}records.${'$'}i
         """.trimIndent()
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     fun deleteRecords(queryMatch: String): String? {
@@ -133,7 +133,7 @@ class JsonStore(
              let ${'$'}m := for ${'$'}i at ${'$'}pos in ${'$'}doc where local:q(${'$'}i, ${queryMatch.toJsonParse()}) return ${'$'}pos - 1
              for ${'$'}i in ${'$'}m order by ${'$'}i descending return delete json ${'$'}doc[[${'$'}i]]
         """.trimIndent()
-        return client.executeQuery(query, authManager.getAccessToken())
+        return client.executeTextQuery(query, authManager.getAccessToken())
     }
 
     private fun upsertOrUpdateQuery(upsert: Boolean): String = if (upsert) upsertFunctionInclude else updateFunctionInclude

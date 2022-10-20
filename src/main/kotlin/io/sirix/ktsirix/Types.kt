@@ -1,5 +1,6 @@
 package io.sirix.ktsirix
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 data class QueryResult(
@@ -89,8 +90,20 @@ data class MetaNode(
     val value: Any
 )
 
+data class GlobalInfo(
+    val databases: List<DatabaseInfo>
+)
+
 data class DatabaseInfo(
     val name: String,
     val type: DbType,
     val resources: List<String>
+)
+
+data class SirixIndexedQuery(
+    val query: String,
+    @JsonProperty("startResultSeqIndex")
+    val startResultSeqIndex: Int?,
+    @JsonProperty("endResultSeqIndex")
+    val endResultSeqIndex: Int?
 )

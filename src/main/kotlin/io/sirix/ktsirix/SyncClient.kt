@@ -39,6 +39,20 @@ class SyncClient(
         )
     }
 
+    override fun <T> getGlobalInfo(resources: Boolean, accessToken: String, tClass: TypeReference<T>): T {
+        val urlBuilder = "$host/".toHttpUrl()
+            .newBuilder()
+        if (resources) {
+            urlBuilder.addQueryParameter("withResources", "true")
+        }
+
+        val request = Request.Builder()
+            .url(urlBuilder.build())
+            .withAuthorization(accessToken)
+            .build()
+        return executeRequestWithResponse(request, tClass, "read global info")
+    }
+
     override fun createDatabase(name: String, type: DbType, accessToken: String) {
         val request = Request.Builder()
             .url("$host/$name")
@@ -67,9 +81,18 @@ class SyncClient(
         executeRequest(request, "database deletion")
     }
 
-    override fun executeQuery(query: String, accessToken: String): String? = executeQuery(mapOf("query" to query), accessToken)
+    override fun deleteAll(accessToken: String) {
+        val request = Request.Builder()
+            .url("$host/")
+            .method("DELETE", null)
+            .withAuthorization(accessToken)
+            .build()
+        executeRequest(request, "complete deletion")
+    }
 
-    override fun executeQuery(query: Map<String, String>, accessToken: String): String? {
+    override fun executeTextQuery(query: String, accessToken: String): String? = executeQuery(mapOf("query" to query), accessToken)
+
+    override fun <T> executeQuery(query: T, accessToken: String): String? {
         val request = Request.Builder()
             .url("$host/")
             .post(query.toRequestBody(JSON_MEDIA_TYPE))
@@ -144,7 +167,7 @@ class SyncClient(
         }
     }
 
-    private fun Map<String, String>.toRequestBody(mediaType: String) = DefaultObjectMapper.writeValueAsString(this).toRequestBody(mediaType.toMediaType())
+    private fun <T> T.toRequestBody(mediaType: String) = DefaultObjectMapper.writeValueAsString(this).toRequestBody(mediaType.toMediaType())
 
     private fun Request.Builder.withAuthorization(accessToken: String): Request.Builder = this.header("Authorization", "Bearer $accessToken")
 }
