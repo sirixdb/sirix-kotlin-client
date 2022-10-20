@@ -9,8 +9,8 @@ data class QueryResult(
     val revision: Any
 )
 
-data class History(
-    val commits: List<Commit>
+data class HistoryCommit(
+    val history: List<Commit>
 )
 
 data class Commit(
@@ -20,9 +20,17 @@ data class Commit(
     val commitMessage: String
 )
 
+data class HistorySubtreeRevision(
+    val rest: List<SubtreeRevision>
+)
+
 data class SubtreeRevision(
     val revisionTimestamp: Instant,
     val revisionNumber: Int
+)
+
+data class HistoryRevision(
+    val rest: List<Revision>
 )
 
 data class Revision(

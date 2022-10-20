@@ -45,7 +45,7 @@ class JsonStore(
 
     fun create(data: String = "[]"): String? = client.createResource(dbName, dbType, storeName, data, authManager.getAccessToken())
 
-    fun resourceHistory(): List<Commit> = client.history(dbName, dbType, storeName, authManager.getAccessToken(), object : TypeReference<History>() {}).commits
+    fun resourceHistory(): List<Commit> = client.history(dbName, dbType, storeName, authManager.getAccessToken(), object : TypeReference<HistoryCommit>() {}).history
 
     fun historyEmbed(nodeKey: Int, revision: Revision? = null): List<Revision> {
         val query = """
@@ -54,12 +54,12 @@ class JsonStore(
              else if (sdb:hash(${'$'}rev) ne sdb:hash(jn:previous(${'$'}rev))) then ${'$'}rev
              else () return ${'$'}result
         """.trimIndent()
-        return readResource(query, revision, object : TypeReference<List<Revision>>() {})
+        return readResource(query, revision, object : TypeReference<HistoryRevision>() {}).rest
     }
 
     fun historyRevision(nodeKey: Int, revision: Revision? = null): List<Revision> {
         val query = "sdb:item-history(sdb:select-item(\$\$, $nodeKey))"
-        return readResource(query, revision, object : TypeReference<List<Revision>>() {})
+        return readResource(query, revision, object : TypeReference<HistoryRevision>() {}).rest
     }
 
     fun historySubtreeRevision(nodeKey: Int, revision: Revision? = null): List<SubtreeRevision> {
@@ -70,13 +70,14 @@ class JsonStore(
              else if (sdb:hash(${'$'}rev) ne sdb:hash(jn:previous(${'$'}rev))) then $revisionData
              else () return ${'$'}result
         """.trimIndent()
-        return readResource(query, revision, object : TypeReference<List<SubtreeRevision>>() {})
+        return readResource(query, revision, object : TypeReference<HistorySubtreeRevision>() {}).rest
     }
 
-    fun findByKey(nodeKey: Int, revision: Revision?): Revision {
+    // TODO: Confirm the response schema
+    fun findByKey(nodeKey: Int, revision: Revision?): Map<String, Any> {
         val params = mutableMapOf("nodeId" to nodeKey.toString())
         revision?.toParamsMap()?.let(params::putAll)
-        return client.readResource(dbName, dbType, storeName, params, authManager.getAccessToken(), object : TypeReference<Revision>() {})
+        return client.readResource(dbName, dbType, storeName, params, authManager.getAccessToken(), object : TypeReference<Map<String, Any>>() {})
     }
 
     private fun <T> readResource(query: String, revision: Revision? = null, tClass: TypeReference<T>): T {
