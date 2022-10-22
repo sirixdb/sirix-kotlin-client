@@ -102,8 +102,6 @@ data class DatabaseInfo(
 
 data class SirixIndexedQuery(
     val query: String,
-    @JsonProperty("startResultSeqIndex")
     val startResultSeqIndex: Int?,
-    @JsonProperty("endResultSeqIndex")
     val endResultSeqIndex: Int?
 )
