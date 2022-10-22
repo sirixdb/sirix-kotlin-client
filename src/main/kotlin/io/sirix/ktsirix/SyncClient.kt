@@ -101,9 +101,9 @@ class SyncClient(
         return executeRequest(request, "query")
     }
 
-    override fun resourceExists(dbName: String, dbType: DbType, storeName: String, accessToken: String): Boolean {
+    override fun resourceExists(dbName: String, dbType: DbType, resourceName: String, accessToken: String): Boolean {
         val request = Request.Builder()
-            .url("$host/$dbName/$storeName")
+            .url("$host/$dbName/$resourceName")
             .head()
             .withAuthorization(accessToken)
             .header("Accept", dbType.value)
@@ -111,8 +111,8 @@ class SyncClient(
         return httpClient.newCall(request).execute().use(Response::isSuccessful)
     }
 
-    override fun <T> readResource(dbName: String, dbType: DbType, storeName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T {
-        val urlBuilder = "$host/$storeName".toHttpUrl()
+    override fun <T> readResource(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T {
+        val urlBuilder = "$host/$resourceName".toHttpUrl()
             .newBuilder()
         params.forEach { (key, value) -> urlBuilder.addQueryParameter(key, value) }
 
@@ -124,9 +124,9 @@ class SyncClient(
         return executeRequestWithResponse(request, tClass, "read resource")
     }
 
-    override fun createResource(dbName: String, dbType: DbType, storeName: String, data: String, accessToken: String, hashType: String): String? {
+    override fun createResource(dbName: String, dbType: DbType, resourceName: String, data: String, accessToken: String, hashType: String): String? {
         val request = Request.Builder()
-            .url("$host/$dbName/$storeName?hashType=$hashType")
+            .url("$host/$dbName/$resourceName?hashType=$hashType")
             .put(data.toRequestBody(dbType.value.toMediaType()))
             .withAuthorization(accessToken)
             .build()

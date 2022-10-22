@@ -13,8 +13,8 @@ interface ApiClient {
     fun deleteAll(accessToken: String)
     fun executeTextQuery(query: String, accessToken: String): String?
     fun <T> executeQuery(query: T, accessToken: String): String?
-    fun resourceExists(dbName: String, dbType: DbType, storeName: String, accessToken: String): Boolean
-    fun createResource(dbName: String, dbType: DbType, storeName: String, data: String, accessToken: String, hashType: String = "ROLLING"): String?
+    fun resourceExists(dbName: String, dbType: DbType, resourceName: String, accessToken: String): Boolean
+    fun createResource(dbName: String, dbType: DbType, resourceName: String, data: String, accessToken: String, hashType: String = "ROLLING"): String?
     fun <T> history(dbName: String, dbType: DbType, storeName: String, accessToken: String, tClass: TypeReference<T>): T
-    fun <T> readResource(dbName: String, dbType: DbType, storeName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T
+    fun <T> readResource(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T
 }
