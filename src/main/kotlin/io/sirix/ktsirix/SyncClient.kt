@@ -2,17 +2,18 @@ package io.sirix.ktsirix
 
 import com.fasterxml.jackson.core.type.TypeReference
 import io.sirix.ktsirix.util.DefaultObjectMapper
+import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
-import okhttp3.ResponseBody
 
 private const val TOKEN_ENDPOINT = "token"
 
 private const val JSON_MEDIA_TYPE = "application/json; charset=utf-8"
+
+private const val AUTHORIZATION = "Authorization"
+
+private const val BEARER = "Bearer"
 
 class SyncClient(
     private val host: String,
@@ -75,7 +76,7 @@ class SyncClient(
     override fun deleteDatabase(name: String, accessToken: String) {
         val request = Request.Builder()
             .url("$host/$name")
-            .method("DELETE", null)
+            .delete()
             .withAuthorization(accessToken)
             .build()
         executeRequest(request, "database deletion")
@@ -84,7 +85,7 @@ class SyncClient(
     override fun deleteAll(accessToken: String) {
         val request = Request.Builder()
             .url("$host/")
-            .method("DELETE", null)
+            .delete()
             .withAuthorization(accessToken)
             .build()
         executeRequest(request, "complete deletion")
@@ -111,17 +112,22 @@ class SyncClient(
         return httpClient.newCall(request).execute().use(Response::isSuccessful)
     }
 
-    override fun <T> readResource(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T {
-        val urlBuilder = "$host/$resourceName".toHttpUrl()
-            .newBuilder()
-        params.forEach { (key, value) -> urlBuilder.addQueryParameter(key, value) }
+    override fun <T> readResource(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T =
+        executeRequestWithResponse(readResourceRequest(dbName, dbType, resourceName, params, accessToken), tClass, "read resource")
 
-        val request = Request.Builder()
+    override fun readResourceAsString(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String): String? =
+        executeRequest(readResourceRequest(dbName, dbType, resourceName, params, accessToken), "read resource")
+
+    private fun readResourceRequest(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String): Request {
+        val urlBuilder = "$host/$dbName/$resourceName".toHttpUrl()
+            .newBuilder()
+        params.forEach { (k, v) -> urlBuilder.addQueryParameter(k, v) }
+
+        return Request.Builder()
             .url(urlBuilder.build())
             .header("Accept", dbType.value)
             .withAuthorization(accessToken)
             .build()
-        return executeRequestWithResponse(request, tClass, "read resource")
     }
 
     override fun createResource(dbName: String, dbType: DbType, resourceName: String, data: String, accessToken: String, hashType: String): String? {
@@ -141,6 +147,69 @@ class SyncClient(
             .withAuthorization(accessToken)
             .build()
         return executeRequestWithResponse(request, tClass, "fetch history")
+    }
+
+    override fun <T> diff(dbName: String, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T {
+        val urlBuilder = "$host/$dbName/$resourceName/diff".toHttpUrl()
+            .newBuilder()
+        params.forEach { (k, v) -> urlBuilder.addQueryParameter(k, v) }
+        val request = Request.Builder()
+            .url(urlBuilder.build())
+            .withAuthorization(accessToken)
+            .build()
+        return executeRequestWithResponse(request, tClass, "fetch diff")
+    }
+
+    override fun deleteResource(dbName: String, dbType: DbType, resourceName: String, nodeId: Int?, etag: String?, accessToken: String) {
+        val urlBuilder = "$host/$resourceName".toHttpUrl()
+            .newBuilder()
+        nodeId?.let { urlBuilder.addQueryParameter("nodeId", it.toString()) }
+
+        val headersBuilder: Headers.Builder = Headers.Builder()
+            .withAuthorization(accessToken)
+            .add("Content-Type", dbType.value)
+
+        val nodeEtag = etag ?: nodeId?.let {
+            getEtag(dbName, dbType, resourceName, it, accessToken)
+        }
+        nodeEtag?.let {
+            headersBuilder.add("ETag", it)
+        }
+
+        val request = Request.Builder()
+            .url(urlBuilder.build())
+            .delete()
+            .headers(headersBuilder.build())
+            .build()
+        executeRequest(request, "delete resource")
+    }
+
+    override fun getEtag(dbName: String, dbType: DbType, resourceName: String, nodeId: Int, accessToken: String): String? {
+        val request = Request.Builder()
+            .url("$host/$resourceName?nodeId=$nodeId")
+            .head()
+            .withAuthorization(accessToken)
+            .header("Accept", dbType.value)
+            .build()
+        return httpClient.newCall(request).execute().use {
+            it.header("etag")
+        }
+    }
+
+    override fun update(dbName: String, dbType: DbType, resourceName: String, nodeId: Int, data: String, insert: Insert, etag: String?, accessToken: String): String? {
+        val headersBuilder: Headers.Builder = Headers.Builder()
+            .withAuthorization(accessToken)
+            .add("Content-Type", dbType.value)
+        (etag ?: getEtag(dbName, dbType, resourceName, nodeId, accessToken))?.let {
+            headersBuilder.add("ETag", it)
+        }
+
+        val request = Request.Builder()
+            .url("$host/$resourceName?nodeId=$nodeId&insert=${insert.value}")
+            .post(data.toRequestBody(dbType.value))
+            .headers(headersBuilder.build())
+            .build()
+        return executeRequest(request, "update resource")
     }
 
     private fun <T> executeAuthentication(requestBodyMap: Map<String, String>, tClass: TypeReference<T>): T {
@@ -169,5 +238,7 @@ class SyncClient(
 
     private fun <T> T.toRequestBody(mediaType: String) = DefaultObjectMapper.writeValueAsString(this).toRequestBody(mediaType.toMediaType())
 
-    private fun Request.Builder.withAuthorization(accessToken: String): Request.Builder = this.header("Authorization", "Bearer $accessToken")
+    private fun Request.Builder.withAuthorization(accessToken: String): Request.Builder = this.header(AUTHORIZATION, "$BEARER $accessToken")
+
+    private fun Headers.Builder.withAuthorization(accessToken: String): Headers.Builder = this.add(AUTHORIZATION, "$BEARER $accessToken")
 }

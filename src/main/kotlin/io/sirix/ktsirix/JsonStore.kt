@@ -43,7 +43,7 @@ class JsonStore(
 
     fun exists(): Boolean = client.resourceExists(dbName, dbType, storeName, authManager.getAccessToken())
 
-    fun create(data: String = "[]"): String? = client.createResource(dbName, dbType, storeName, data, authManager.getAccessToken())
+    fun create(data: String): String? = client.createResource(dbName, dbType, storeName, data, authManager.getAccessToken())
 
     fun resourceHistory(): List<Commit> = client.history(dbName, dbType, storeName, authManager.getAccessToken(), object : TypeReference<HistoryCommit>() {}).history
 
@@ -73,11 +73,10 @@ class JsonStore(
         return readResource(query, revision, object : TypeReference<HistorySubtreeRevision>() {}).rest
     }
 
-    // TODO: Confirm the response schema
-    fun findByKey(nodeKey: Int, revision: Revision?): Map<String, Any> {
+    fun findByKey(nodeKey: Int, revision: Revision?): String? {
         val params = mutableMapOf("nodeId" to nodeKey.toString())
         revision?.toParamsMap()?.let(params::putAll)
-        return client.readResource(dbName, dbType, storeName, params, authManager.getAccessToken(), object : TypeReference<Map<String, Any>>() {})
+        return client.readResourceAsString(dbName, dbType, storeName, params, authManager.getAccessToken())
     }
 
     private fun <T> readResource(query: String, revision: Revision? = null, tClass: TypeReference<T>): T {

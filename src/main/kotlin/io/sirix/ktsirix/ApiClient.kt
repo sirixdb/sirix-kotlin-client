@@ -16,5 +16,10 @@ interface ApiClient {
     fun resourceExists(dbName: String, dbType: DbType, resourceName: String, accessToken: String): Boolean
     fun createResource(dbName: String, dbType: DbType, resourceName: String, data: String, accessToken: String, hashType: String = "ROLLING"): String?
     fun <T> history(dbName: String, dbType: DbType, storeName: String, accessToken: String, tClass: TypeReference<T>): T
+    fun <T> diff(dbName: String, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T
     fun <T> readResource(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String, tClass: TypeReference<T>): T
+    fun readResourceAsString(dbName: String, dbType: DbType, resourceName: String, params: Map<String, String>, accessToken: String): String?
+    fun deleteResource(dbName: String, dbType: DbType, resourceName: String, nodeId: Int?, etag: String?, accessToken: String)
+    fun getEtag(dbName: String, dbType: DbType, resourceName: String, nodeId: Int, accessToken: String): String?
+    fun update(dbName: String, dbType: DbType, resourceName: String, nodeId: Int, data: String, insert: Insert, etag: String?, accessToken: String): String?
 }
