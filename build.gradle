@@ -1,0 +1,54 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.7.20'
+    id 'application'
+    id 'idea'
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'org.jlleitschuh.gradle.ktlint' version '11.0.0'
+}
+
+group = 'io.sirix.ktsirix'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+
+    implementation 'ch.qos.logback:logback-classic:1.4.3'
+    implementation 'ch.qos.logback:logback-core:1.4.3'
+    implementation 'org.slf4j:slf4j-api:2.0.3'
+
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.13.4'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.4'
+
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    testImplementation 'com.willowtreeapps.assertk:assertk-jvm:0.25'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+    testImplementation 'org.mockito:mockito-core:4.8.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:4.0.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+ext['log4j2.version'] = '2.19.0'
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '18'
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = '18'
+}
+
+application {
+    mainClassName = 'io.sirix.ktsirix.MainKt'
+}
